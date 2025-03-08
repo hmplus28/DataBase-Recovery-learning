@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-translate-key="title">🧩 شبیه‌ساز کامل بازیابی پایگاه داده</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    /* فونت کلی تمام دکمه‌ها */
+    button {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    /* Root Variables */
+    :root {
+      --primary: #4a90e2;
+      --success: #28a745;
+      --danger: #dc3545;
+      --warning: #ffc107;
+    }
+    /* Default styles */
+    body {
+      background: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    .component {
+      background: white;
+      border: 2px solid #dee2e6;
+      border-radius: 15px;
+      padding: 20px;
+      margin: 15px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+    .log-entry {
+      padding: 8px;
+      margin: 5px 0;
+      border-left: 3px solid;
+      animation: slideIn 0.3s;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(20px); }
+    }
+    .phase {
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .data-item {
+      padding: 5px;
+      margin: 3px;
+      background: #f8f9fa;
+      border-radius: 3px;
+    }
+    .disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    /* Dark Mode styles */
+    .dark-mode {
+      background: #343a40;
+      color: #f8f9fa;
+    }
+    .dark-mode .component {
+      background: #495057;
+      border-color: #6c757d;
+      color: #f8f9fa;
+    }
+    .dark-mode .data-item {
+      background: #6c757d;
+    }
+    .dark-mode .phase.alert {
+      background: #6c757d;
+      border-color: #adb5bd;
+      color: #f8f9fa;
+    }
+    .dark-mode .log-entry {
+      background: #495057;
+    }
+    .theme-toggle {
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    /* Custom style for new transaction button (light green) */
+    .btn-new {
+      background-color: #90ee90;
+      color: #000;
+      border-color: #90ee90;
+    }
+    .dark-mode .btn-new {
+      background-color: #76c776;
+      color: #fff;
+      border-color: #76c776;
+    }
+    /* Custom style for disk toggle button */
+    .btn-disk {
+      background-color: #007bff;
+      color: #fff;
+      border-color: #007bff;
+    }
+    .dark-mode .btn-disk {
+      background-color: #0056b3;
+      color: #fff;
+      border-color: #0056b3;
+    }
+    /* Select dropdown arrow in dark mode */
+    .dark-mode .form-select {
+      background: #495057 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23fff' d='M2 0L0 2h4L2 0z'/%3E%3C/svg%3E") no-repeat right 0.75rem center;
+      background-size: 8px 10px;
+      color: #f8f9fa;
+      border-color: #6c757d;
+    }
+    /* Modal dark mode content */
+    .dark-mode .modal-content {
+      background-color: #495057;
+      color: #f8f9fa;
+    }
+    /* Reposition and style modal close button */
+    .modal-header {
+      position: relative;
+      padding-left: 50px;
+    }
+    .modal-header .btn-close {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      width: 32px;
+      height: 32px;
+      background-image: url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='%23dc3545' viewBox='0 0 16 16'><path d='M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z'/></svg>");
+      background-repeat: no-repeat;
+      background-size: 16px 16px;
+      border: none;
+      opacity: 1;
+    }
+    /* Grouping buttons in columns using d-grid */
+    .btn-group-custom {
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-5">
+    <!-- Main Title -->
+    <h1 id="mainTitle" class="text-center mb-4" data-translate-key="title">🧩 شبیه‌ساز کامل بازیابی پایگاه داده</h1>
+
+    <!-- Row for button groups -->
+    <div class="row justify-content-center g-3">
+      <!-- Group 1: Transaction Operations -->
+      <div class="col-md-2">
+        <div class="d-grid gap-2">
+          <button id="btnNewTransaction" class="btn btn-new" onclick="createTransaction()" data-translate-key="newTransaction" data-tooltip-key="tooltipNewTransaction">➕ تراکنش جدید</button>
+          <button id="btnCommit" class="btn btn-success" onclick="commitAllTransactions()" data-translate-key="commitAll" data-tooltip-key="tooltipCommitAll">✅ تایید تراکنش‌ها</button>
+        </div>
+      </div>
+
+      <!-- Group 2: System Operations -->
+      <div class="col-md-3">
+        <div class="d-grid gap-2">
+          <button id="btnCheckpoint" class="btn btn-warning" onclick="createCheckpoint()" data-translate-key="checkpoint" data-tooltip-key="tooltipCheckpoint">🔖 چک پوینت</button>
+          <button id="btnSimulateFailure" class="btn btn-danger" onclick="simulateFailure()" data-translate-key="simulateFailure" data-tooltip-key="tooltipSimulateFailure">💥 شبیه‌سازی خطا</button>
+          <button id="btnFlushBuffer" class="btn btn-secondary" onclick="flushBuffer()" data-translate-key="flushBuffer" data-tooltip-key="tooltipFlushBuffer">💾 فلاش بافر</button>
+          <button id="btnToggleDisk" class="btn btn-disk" onclick="toggleDiskStatus()" data-translate-key="toggleDisk" data-tooltip-key="tooltipToggleDisk">💿 تغییر وضعیت دیسک</button>
+        </div>
+      </div>
+
+      <!-- Group 3: Scenario Selection -->
+      <div class="col-md-3">
+        <div class="d-grid gap-2">
+          <select id="scenarioSelector" class="form-select" data-tooltip-key="tooltipRunScenario">
+            <option value="normal" data-translate-key="scenarioNormal">🏃 سناریوی عادی</option>
+            <option value="transaction-fail" data-translate-key="scenarioTransactionFail">💥 شکست تراکنش</option>
+            <option value="system-crash" data-translate-key="scenarioSystemCrash">🖥 شکست سیستم</option>
+            <option value="two-phase" data-translate-key="scenarioTwoPhase">🤝 Two-Phase Commit</option>
+          </select>
+          <button id="btnRunScenario" class="btn btn-warning" onclick="runScenario()" data-translate-key="runScenario" data-tooltip-key="tooltipRunScenario">▶️ اجرای سناریو</button>
+          <button id="btnDump" class="btn btn-primary" onclick="simulateDump()" data-translate-key="simulateDump" data-tooltip-key="tooltipDump">📄 دامپ</button>
+        </div>
+      </div>
+
+      <!-- Group 4: Reset, Redo, Undo & Clear Logs -->
+      <div class="col-md-2">
+        <div class="d-grid gap-2">
+          <button id="btnResetSystem" class="btn btn-dark" onclick="resetSystem()" data-translate-key="resetSystem" data-tooltip-key="tooltipResetSystem">🔄 ریست سیستم</button>
+          <button id="btnRedo" class="btn btn-info" onclick="executeRedo()" data-translate-key="redo" data-tooltip-key="tooltipRedo">↪️ Redo</button>
+          <button id="btnUndo" class="btn btn-warning" onclick="undoLastTransaction()" data-tooltip-key="tooltipUndo">↩️ Undo</button>
+          <button id="btnClearLogs" class="btn btn-outline-danger" onclick="clearLogs()" data-translate-key="clearLogs" data-tooltip-key="tooltipClearLogs">🗑 پاک کردن لاگ‌ها</button>
+        </div>
+      </div>
+
+      <!-- Group 5: Settings -->
+      <div class="col-md-2">
+        <div class="d-grid gap-2">
+          <button id="btnToggleTheme" class="btn btn-outline-secondary theme-toggle" onclick="toggleDarkMode()" data-translate-key="changeTheme" data-tooltip-key="tooltipToggleTheme">🌙 تغییر تم</button>
+          <button id="btnAbout" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#aboutModal" data-translate-key="about" data-tooltip-key="tooltipAbout">ℹ️ درباره ما</button>
+          <button id="btnGuide" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#guideModal" data-translate-key="guide" data-tooltip-key="tooltipGuide">📚 راهنما</button>
+          <button id="btnToggleLanguage" class="btn btn-outline-primary" onclick="toggleLanguage()" data-translate-key="switchLanguage" data-tooltip-key="tooltipToggleLanguage">English</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Status Sections -->
+    <div class="row">
+      <!-- Data Status -->
+      <div class="col-md-4">
+        <div class="component">
+          <h4 data-translate-key="dataStatus">📊 وضعیت داده‌ها</h4>
+          <div class="mt-3">
+            <div class="data-item">A: <span id="dataA">1000</span></div>
+            <div class="data-item">B: <span id="dataB">2000</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- Storage Status -->
+      <div class="col-md-4">
+        <div class="component">
+          <h4 data-translate-key="storageStatus">💾 وضعیت ذخیره‌سازی</h4>
+          <div class="mt-3">
+            <h5 data-translate-key="mainMemory">حافظه اصلی:</h5>
+            <div id="bufferState" data-translate-key="bufferLabel">بافر: <span id="bufferedData">0</span></div>
+            <div id="bufferContent" class="mt-2"></div>
+          </div>
+          <div class="mt-3">
+            <h5 data-translate-key="diskLabel">دیسک:</h5>
+            <div id="diskState" class="text-success"></div>
+            <div data-translate-key="lastCheckpointLabel">
+              آخرین Checkpoint: <span id="lastCheckpoint"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Transactions Status -->
+      <div class="col-md-4">
+        <div class="component">
+          <h4 data-translate-key="transactionStatus">📑 تراکنش‌ها</h4>
+          <div id="transactions" class="mt-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Logs -->
+    <div class="component mt-4">
+      <h4 data-translate-key="systemLogs">📜 لاگ سیستم</h4>
+      <div id="systemLogs" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- About Modal -->
+  <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="aboutModalLabel" class="modal-title" data-translate-key="about">ℹ️ درباره ما</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong data-translate-key="aboutDeveloper">حمیدرضا مهرآبادی</strong></p>
+          <p data-translate-key="aboutProject">شبیه‌ساز کامل بازیابی پایگاه داده جهت نمایش مفاهیم تراکنش، فلاش بافر، Checkpoint، Undo/Redo و بهبودهای سیستم</p>
+          <p><strong>لینک:</strong> <a href="https://github.com/hmplus28" target="_blank" data-translate-key="aboutLink">github.com/hmplus28</a></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate-key="closeBtn">❌ بستن</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guide Modal -->
+  <div class="modal fade" id="guideModal" tabindex="-1" aria-labelledby="guideModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="guideModalLabel" class="modal-title" data-translate-key="guide">📚 راهنما</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+        </div>
+        <div class="modal-body">
+          <h5 data-translate-key="guideIntroTitle">مقدمه</h5>
+          <p data-translate-key="guideIntroText">
+            این سیستم یک شبیه‌ساز کامل بازیابی پایگاه داده است که مفاهیم تراکنش، Checkpoint، Undo/Redo، فلاش بافر و سایر عملیات مرتبط با مدیریت داده را به نمایش می‌گذارد.
+          </p>
+          <h5 data-translate-key="guideUsageTitle">نحوه استفاده</h5>
+          <ul>
+            <li data-translate-key="guideUsageNewTransaction"><strong data-translate-key="newTransaction">➕ تراکنش جدید:</strong> ایجاد تراکنش شامل خواندن و نوشتن.</li>
+            <li data-translate-key="guideUsageCheckpoint"><strong data-translate-key="checkpoint">🔖 Checkpoint:</strong> ذخیره وضعیت فعلی سیستم برای بازیابی در صورت خطا.</li>
+            <li data-translate-key="guideUsageFailure"><strong data-translate-key="simulateFailure">💥 شبیه‌سازی خطا:</strong> ایجاد خطای تصادفی در تراکنش‌ها و اجرای Undo.</li>
+            <li data-translate-key="guideUsageRedo"><strong data-translate-key="redo">↪️ Redo:</strong> اعمال مجدد تغییرات ثبت‌شده در لاگ.</li>
+            <li data-translate-key="guideUsageFlushBuffer"><strong data-translate-key="flushBuffer">💾 فلاش بافر:</strong> انتقال داده‌های بافر به حافظه اصلی.</li>
+            <li data-translate-key="guideUsageReset"><strong data-translate-key="resetSystem">🔄 ریست سیستم:</strong> بازنشانی سیستم به حالت اولیه.</li>
+            <li data-translate-key="guideUsageDump"><strong data-translate-key="simulateDump">📄 Dump:</strong> اجرای عملیات Dump طبق مراحل زیر:
+              <ul>
+                <li data-translate-key="dumpStep1">❌ عدم وجود تراکنش فعال</li>
+                <li data-translate-key="dumpStep2">📜 انتقال لاگ‌های حافظه به ذخیره پایدار</li>
+                <li data-translate-key="dumpStep3">💾 فلاش بافر به دیسک</li>
+                <li data-translate-key="dumpStep4">🗄 کپی محتویات پایگاه داده به ذخیره پایدار</li>
+                <li data-translate-key="dumpStep5">📝 اضافه کردن رکورد لاگ &lt;dump&gt;</li>
+              </ul>
+            </li>
+            <li data-translate-key="guideUsageTheme"><strong data-translate-key="changeTheme">🌙 تغییر تم:</strong> جابجایی بین حالت نرمال و دارک.</li>
+            <li data-translate-key="guideUsageLanguage"><strong data-translate-key="switchLanguage">English:</strong> تغییر کل محتوا بین فارسی و انگلیسی.</li>
+            <li data-translate-key="guideUsageDiskToggle">
+                <strong data-translate-key="toggleDisk">💿 تغییر وضعیت دیسک:</strong>
+                تغییر وضعیت دیسک بین سالم و خراب برای شبیه‌سازی شرایط مختلف
+              </li>
+              <li data-translate-key="guideUsageClearLogs">
+                <strong data-translate-key="clearLogs">🗑 پاک کردن لاگ‌ها:</strong>
+                حذف تمامی رکوردهای لاگ سیستم بدون تاثیر بر داده‌ها
+              </li>
+          </ul>
+          <h5 data-translate-key="guideExampleTitle">مثال عملی</h5>
+          <p data-translate-key="guideExampleText">
+            ابتدا روی "➕ تراکنش جدید" کلیک کنید تا یک تراکنش ایجاد شود. سپس با "🔖 Checkpoint" وضعیت ذخیره شود. بعد با "💥 شبیه‌سازی خطا" می‌توانید Undo را ببینید. نهایتاً با "↪️ Redo" تغییرات مجدداً اعمال و با "📄 Dump" عملیات Dump پیاده‌سازی می‌شود.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate-key="closeBtn">❌ بستن</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    // Global language state
+    let currentLanguage = "fa";
+
+    // Transaction counter for unique IDs
+    let transactionCounter = 0;
+
+    // Translation dictionary (including tooltips)
+    const translations = {
+      title: { fa: "🧩 شبیه‌ساز کامل بازیابی پایگاه داده", en: "🧩 Full Database Recovery Simulator" },
+      newTransaction: { fa: "➕ تراکنش جدید", en: "➕ New Transaction" },
+      checkpoint: { fa: "🔖 چک پوینت", en: "🔖 Checkpoint" },
+      simulateFailure: { fa: "💥 شبیه‌سازی خطا", en: "💥 Simulate Failure" },
+      redo: { fa: "↪️ Redo", en: "↪️ Redo" },
+      flushBuffer: { fa: "💾 فلاش بافر", en: "💾 Flush Buffer" },
+      resetSystem: { fa: "🔄 ریست سیستم", en: "🔄 Reset System" },
+      simulateDump: { fa: "📄 دامپ", en: "📄 Dump" },
+      runScenario: { fa: "▶️ اجرای سناریو", en: "▶️ Run Scenario" },
+      changeTheme: { fa: "🌙 تغییر تم", en: "🌙 Toggle Theme" },
+      about: { fa: "ℹ️ درباره ما", en: "ℹ️ About Us" },
+      guide: { fa: "📚 راهنما", en: "📚 Guide" },
+      switchLanguage: { fa: "English", en: "فارسی" },
+      dataStatus: { fa: "📊 وضعیت داده‌ها", en: "📊 Data Status" },
+      storageStatus: { fa: "💾 وضعیت ذخیره‌سازی", en: "💾 Storage Status" },
+      transactionStatus: { fa: "📑 تراکنش‌ها", en: "📑 Transactions" },
+      systemLogs: { fa: "📜 لاگ سیستم", en: "📜 System Logs" },
+      scenarioNormal: { fa: "🏃 سناریوی عادی", en: "🏃 Normal Scenario" },
+      scenarioTransactionFail: { fa: "💥 شکست تراکنش", en: "💥 Transaction Failure" },
+      scenarioSystemCrash: { fa: "🖥 شکست سیستم", en: "🖥 System Crash" },
+      scenarioTwoPhase: { fa: "🤝 Two-Phase Commit", en: "🤝 Two-Phase Commit" },
+      commitAll: { fa: "✅ تایید تراکنش‌ها", en: "✅ Commit All Transactions" },
+      clearLogs: { fa: "🗑 پاک کردن لاگ‌ها", en: "🗑 Clear Logs" },
+      tooltipNewTransaction: { fa: "ایجاد یک تراکنش جدید", en: "Create a new transaction" },
+      tooltipCommitAll: { fa: "تایید تمام تراکنش‌های فعال", en: "Commit all active transactions" },
+      tooltipCheckpoint: { fa: "ایجاد یک چک پوینت", en: "Create a checkpoint" },
+      tooltipSimulateFailure: { fa: "شبیه‌سازی شکست تراکنش", en: "Simulate a transaction failure" },
+      tooltipFlushBuffer: { fa: "فلاش کردن بافر به دیسک", en: "Flush the buffer to disk" },
+      tooltipToggleDisk: { fa: "تغییر وضعیت دیسک (سالم/خراب)", en: "Toggle disk status (Healthy/Broken)" },
+      tooltipRunScenario: { fa: "اجرای سناریوی انتخاب شده", en: "Run the selected scenario" },
+      tooltipDump: { fa: "خروجی گرفتن از وضعیت سیستم", en: "Dump the system state" },
+      tooltipResetSystem: { fa: "ریست کردن سیستم", en: "Reset the system" },
+      tooltipRedo: { fa: "اعمال مجدد تغییرات", en: "Redo changes" },
+      tooltipClearLogs: { fa: "پاک کردن تمام لاگ‌ها", en: "Clear all logs" },
+      tooltipToggleTheme: { fa: "تغییر تم", en: "Toggle theme" },
+      tooltipAbout: { fa: "اطلاعات درباره سیستم", en: "About this system" },
+      tooltipGuide: { fa: "راهنمای استفاده از سیستم", en: "Usage guide" },
+      tooltipToggleLanguage: { fa: "تغییر زبان", en: "Toggle language" },
+      tooltipUndo: { fa: "بازگردانی آخرین تراکنش تایید شده", en: "Undo the last committed transaction" },
+      tooltipDeleteTransaction: { fa: "حذف این تراکنش", en: "Delete this transaction" },
+      // Memory section translations
+      mainMemory: { fa: "حافظه اصلی:", en: "Main Memory:" },
+      bufferLabel: { fa: "بافر:", en: "Buffer:" },
+      // حذف لاگ حافظه چون مورد استفاده نیست
+      diskLabel: { fa: "دیسک:", en: "Disk:" },
+      diskStatusLabel: { fa: "وضعیت:", en: "Status:" },
+      lastCheckpointLabel: { fa: "آخرین Checkpoint:", en: "Last Checkpoint:" },
+      noCheckpoint: { fa: "ندارد", en: "None" },
+      // Guide modal translations
+      guideIntroTitle: { fa: "مقدمه", en: "Introduction" },
+      guideIntroText: { fa: "این سیستم یک شبیه‌ساز کامل بازیابی پایگاه داده است که مفاهیم تراکنش، Checkpoint، Undo/Redo، فلاش بافر و سایر عملیات مرتبط با مدیریت داده را به نمایش می‌گذارد.", en: "This system is a full database recovery simulator demonstrating transactions, checkpoint, undo/redo, buffer flush, and related data management operations." },
+      guideUsageTitle: { fa: "نحوه استفاده", en: "How to Use" },
+      guideUsageNewTransaction: { fa: "➕ تراکنش جدید: ایجاد تراکنش شامل خواندن و نوشتن.", en: "➕ New Transaction: Creates a transaction with read/write operations." },
+      guideUsageCheckpoint: { fa: "🔖 Checkpoint: ذخیره وضعیت فعلی سیستم برای بازیابی در صورت خطا.", en: "🔖 Checkpoint: Saves current system state for recovery in case of failure." },
+      guideUsageFailure: { fa: "💥 شبیه‌سازی خطا: ایجاد خطای تصادفی در تراکنش‌ها و اجرای Undo.", en: "💥 Simulate Failure: Randomly fail an active transaction and execute Undo." },
+      guideUsageRedo: { fa: "↪️ Redo: اعمال مجدد تغییرات ثبت‌شده در لاگ.", en: "↪️ Redo: Reapply changes recorded in logs." },
+      guideUsageFlushBuffer: { fa: "💾 فلاش بافر: انتقال داده‌های بافر به حافظه اصلی.", en: "💾 Flush Buffer: Transfer buffered data to main storage." },
+      guideUsageReset: { fa: "🔄 ریست سیستم: بازنشانی سیستم به حالت اولیه.", en: "🔄 Reset System: Reset the system to its initial state." },
+      guideUsageDump: { fa: "📄 Dump: اجرای عملیات Dump طبق مراحل زیر.", en: "📄 Dump: Execute the dump operations as follows." },
+      guideUsageTheme: { fa: "🌙 تغییر تم: جابجایی بین حالت نرمال و دارک.", en: "🌙 Toggle Theme: Switch between normal and dark modes." },
+      guideUsageLanguage: { fa: "English: تغییر کل محتوا بین فارسی و انگلیسی.", en: "English: Toggle all content between Persian and English." },
+      guideExampleTitle: { fa: "مثال عملی", en: "Example" },
+      guideExampleText: { fa: "ابتدا روی '➕ تراکنش جدید' کلیک کنید تا یک تراکنش ایجاد شود. سپس با '🔖 Checkpoint' وضعیت ذخیره شود. بعد با '💥 شبیه‌سازی خطا' می‌توانید Undo را ببینید. نهایتاً با '↪️ Redo' تغییرات مجدداً اعمال و با '📄 Dump' عملیات Dump پیاده‌سازی می‌شود.", en: "First click 'New Transaction' to create a transaction. Then click 'Checkpoint' to save the state. Next, click 'Simulate Failure' to see Undo in action. Finally, 'Redo' reapplies changes and 'Dump' executes the dump operations." },
+
+  // اضافه کردن ترجمه‌های جدید
+  noBuffer: { fa: "خالی", en: "Empty" },
+  guideUsageDiskToggle: {
+    fa: "💿 تغییر وضعیت دیسک: تغییر وضعیت دیسک بین سالم و خراب برای شبیه‌سازی شرایط مختلف",
+    en: "💿 Toggle Disk: Switch disk status between healthy/broken for different scenarios"
+  },
+  guideUsageClearLogs: {
+    fa: "🗑 پاک کردن لاگ‌ها: حذف تمامی رکوردهای لاگ سیستم بدون تاثیر بر داده‌ها",
+    en: "🗑 Clear Logs: Delete all system log records without affecting data"
+  },
+  // به روزرسانی پیام چک پوینت
+  noCheckpoint: { fa: "ندارد", en: "None" }
+
+    };
+
+    // Update tooltips for elements with data-tooltip-key
+    function updateTooltips() {
+      document.querySelectorAll("[data-tooltip-key]").forEach(el => {
+        const key = el.getAttribute("data-tooltip-key");
+        if(translations[key] && translations[key][currentLanguage]){
+          el.title = translations[key][currentLanguage];
+        }
+      });
+    }
+
+    // Update all elements with data-translate-key attribute
+    function updateLanguage() {
+      document.querySelectorAll("[data-translate-key]").forEach(el => {
+        const key = el.getAttribute("data-translate-key");
+        if(translations[key] && translations[key][currentLanguage]) {
+          el.innerText = translations[key][currentLanguage];
+        }
+      });
+      document.title = translations.title[currentLanguage];
+      if(currentLanguage === "en") {
+        document.documentElement.setAttribute("dir", "ltr");
+        document.documentElement.setAttribute("lang", "en");
+      } else {
+        document.documentElement.setAttribute("dir", "rtl");
+        document.documentElement.setAttribute("lang", "fa");
+      }
+      updateTooltips();
+      updateUI();
+    }
+
+    function toggleLanguage() {
+      currentLanguage = currentLanguage === "fa" ? "en" : "fa";
+      updateLanguage();
+    }
+
+    // Initial system object with stableDB property added
+    let system = {
+      data: { A: 1000, B: 2000 },
+      transactions: [],
+      logs: [],
+      checkpoints: [],
+      buffer: [],
+      diskStatus: "سالم",
+      stableDB: {},
+      logStorage: {
+        active: [],
+        archive: []
+      }
+    };
+
+    // Function to commit all active transactions
+    function commitAllTransactions() {
+      let committed = false;
+      system.transactions.forEach(t => {
+        if(t.state === "فعال") {
+          t.state = "تایید شده";
+          addLog(currentLanguage === "fa" ? `✅ تراکنش ${t.id} تایید شد` : `✅ Transaction ${t.id} committed`, "success");
+          committed = true;
+        }
+      });
+      if(!committed) {
+        addLog(currentLanguage === "fa" ? "⚠️ هیچ تراکنش فعالی برای commit وجود ندارد!" : "⚠️ No active transaction available for commit!", "warning");
+      }
+      updateUI();
+    }
+
+    // Function to clear all logs (without affecting data or transactions)
+    function clearLogs() {
+      document.getElementById("systemLogs").innerHTML = "";
+    }
+
+    // Function to undo the last committed transaction
+    function undoLastTransaction() {
+      for(let i = system.transactions.length - 1; i >= 0; i--){
+        if(system.transactions[i].state === "تایید شده"){
+          executeUndo(system.transactions[i]);
+          system.transactions[i].state = "بازگردانی شده";
+          addLog(currentLanguage === "fa" ? `↩️ تراکنش ${system.transactions[i].id} بازگردانی شد` : `↩️ Transaction ${system.transactions[i].id} undone`, "warning");
+          updateUI();
+          return;
+        }
+      }
+      addLog(currentLanguage === "fa" ? "⚠️ هیچ تراکنش تایید شده‌ای برای بازگردانی وجود ندارد!" : "⚠️ No committed transaction available to undo!", "warning");
+    }
+
+    // Function to delete a transaction by id
+    function deleteTransaction(id) {
+      system.transactions = system.transactions.filter(t => t.id !== id);
+      addLog(currentLanguage === "fa" ? `❌ تراکنش ${id} حذف شد` : `❌ Transaction ${id} deleted`, "info");
+      updateUI();
+    }
+
+    // Scenario definitions
+    const scenarios = {
+      "normal": () => {
+        addLog(currentLanguage === "fa" ? "🏃 سناریوی عادی شروع شد" : "🏃 Normal scenario started", "info");
+        createTransaction();
+        createTransaction();
+      },
+     "transaction-fail": () => {
+  addLog("💥 سناریوی شکست تراکنش شروع شد", "info");
+
+  // ایجاد دو تراکنش با تاخیر بین آنها
+  createTransaction();
+  setTimeout(() => {
+    createTransaction();
+
+    // تاخیر بیشتر برای اطمینان از اجرای تراکنش‌ها
+    setTimeout(() => {
+      const activeTransactions = system.transactions.filter(t => t.state === "فعال");
+      addLog(`🔍 تراکنش‌های فعال: ${activeTransactions.length} عدد`, "info");
+
+      if(activeTransactions.length === 0) {
+        addLog("⚠️ هیچ تراکنش فعالی برای شکست وجود ندارد!", "warning");
+        return;
+      }
+
+      const failedTrans = activeTransactions[Math.floor(Math.random() * activeTransactions.length)];
+      addLog(`🎯 انتخاب تراکنش ${failedTrans.id} برای شکست`, "info");
+
+      failedTrans.state = "شکست خورده";
+      addLog(`💥 تراکنش ${failedTrans.id} شکست خورد`, "danger");
+
+      // نمایش مقادیر قبل از بازگردانی
+      addLog(`📊 مقادیر قبل از Undo - A: ${system.data.A}, B: ${system.data.B}`, "warning");
+
+      // اجرای Undo
+      failedTrans.operations.slice().reverse().forEach(op => {
+        if(op.type === "write") {
+          const before = system.data[op.item];
+          system.data[op.item] = op.old;
+          addLog(`↩️ ${op.item} از ${before} به ${op.old} بازگردانی شد`, "success");
+        }
+      });
+
+      // نمایش مقادیر پس از بازگردانی
+      addLog(`📊 مقادیر پس از Undo - A: ${system.data.A}, B: ${system.data.B}`, "success");
+      updateUI();
+
+    }, 1500); // تاخیر بعد از ایجاد تراکنش دوم
+  }, 500); // تاخیر بین ایجاد تراکنش‌ها
+},
+      "system-crash": () => {
+         if(system.checkpoints.length === 0) {
+      addLog(currentLanguage === "fa"
+        ? "⚠️ هیچ چک پوینتی وجود ندارد! ایجاد چک پوینت اضطراری..."
+        : "⚠️ No checkpoint found! Creating emergency checkpoint...",
+        "warning");
+      createCheckpoint();
+    }
+
+    addLog(currentLanguage === "fa"
+      ? "🖥 شکست سیستم! بازیابی از آخرین چک پوینت..."
+      : "🖥 System crash! Recovering from last checkpoint...",
+      "danger");
+
+    setTimeout(() => {
+      recoverFromCheckpoint();
+      addLog(currentLanguage === "fa"
+        ? "✅ بازیابی با موفقیت انجام شد"
+        : "✅ Recovery succeeded",
+        "success");
+        updateUI();
+
+        }, 1000);
+      },
+      "two-phase": () => {
+        runTwoPhaseCommit();
+      }
+    };
+
+    // Create a transaction (standard)
+    function createTransaction() {
+      transactionCounter++;
+      const tid = `T${transactionCounter}`;
+      const newTrans = {
+        id: tid,
+        state: "فعال",
+        operations: [
+          { type: "read", item: "A" },
+          { type: "write", item: "A", old: system.data.A, new: system.data.A - 50 },
+          { type: "write", item: "B", old: system.data.B, new: system.data.B + 50 },
+          { type: "commit" }
+        ]
+      };
+      system.transactions.push(newTrans);
+      addLog(currentLanguage === "fa" ? `✅ تراکنش ${tid} ایجاد شد` : `✅ Transaction ${tid} created`, "info");
+      processTransaction(newTrans);
+      updateUI();
+    }
+
+    // Process a transaction (standard) – log WAL only once per transaction
+    function processTransaction(trans) {
+      let walLogged = false;
+      trans.operations.forEach(op => {
+        if(op.type === "write") {
+          if(!walLogged) {
+            const logEntry = new LogEntry(trans.id, "UPDATE", { item: op.item, old: op.old, new: op.new });
+            system.logStorage.active.push(logEntry);
+            addLog(currentLanguage === "fa" ? `📝 WAL: لاگ برای ${trans.id} ثبت شد` : `📝 WAL: Log recorded for ${trans.id}`, "warning");
+            walLogged = true;
+          }
+          system.buffer.push({ item: op.item, value: op.new });
+        }
+      });
+      setTimeout(() => {
+        if(flushBuffer()){
+          addLog(currentLanguage === "fa" ? `💾 فلاش داده‌ها به دیسک برای ${trans.id}` : `💾 Data flushed to disk for ${trans.id}`, "success");
+        }
+        updateUI();
+      }, 1000);
+    }
+
+    // Create checkpoint
+    function createCheckpoint() {
+      const checkpointData = {
+        timestamp: new Date().toLocaleString(),
+        data: JSON.parse(JSON.stringify(system.data)),
+        logs: [...system.logStorage.active]
+      };
+      system.checkpoints.push(checkpointData);
+      addLog(currentLanguage === "fa" ? `🔖 چک پوینت ایجاد شد (${checkpointData.timestamp})` : `🔖 Checkpoint created (${checkpointData.timestamp})`, "info");
+      document.getElementById("lastCheckpoint").textContent = checkpointData.timestamp;
+      compressLogs();
+      updateUI();
+    }
+
+    function compressLogs() {
+      system.logStorage.archive = system.logStorage.active.filter(log =>
+        !system.transactions.some(t => t.id === log.tid && t.state === "شکست خورده")
+      );
+      addLog(currentLanguage === "fa" ? "📜 لاگ‌ها فشرده شدند" : "📜 Logs compressed", "warning");
+    }
+
+    // Simulate failure on a random transaction
+    function simulateFailure() {
+      const activeTransactions = system.transactions.filter(t => t.state === "فعال");
+      if(activeTransactions.length === 0) {
+        addLog(currentLanguage === "fa" ? "⚠️ هیچ تراکنش فعالی برای شکست وجود ندارد!" : "⚠️ No active transaction available for failure!", "warning");
+        return;
+      }
+      const failedTrans = activeTransactions[Math.floor(Math.random() * activeTransactions.length)];
+      failedTrans.state = "شکست خورده";
+      addLog(currentLanguage === "fa" ? `💥 تراکنش ${failedTrans.id} به صورت تصادفی شکست خورد` : `💥 Transaction ${failedTrans.id} failed randomly`, "danger");
+      executeUndo(failedTrans);
+      updateUI();
+    }
+
+    // Simulate system crash with recovery
+    function simulateSystemCrash() {
+      system.diskStatus = "خراب";
+      addLog(currentLanguage === "fa" ? "🔖 چک پوینت ایجاد شد" : "🔖 Checkpoint created", "info");
+      createCheckpoint();
+      setTimeout(() => {
+        addLog(currentLanguage === "fa" ? "🖥 شکست سیستم! بازیابی از آخرین Checkpoint..." : "🖥 System crash! Recovering from last checkpoint...", "danger");
+        recoverFromCheckpoint();
+        addLog(currentLanguage === "fa" ? "✅ بازیابی با موفقیت انجام شد" : "✅ Recovery succeeded", "success");
+        updateUI();
+      }, 1000);
+    }
+
+    // Toggle Disk Status button function
+    function toggleDiskStatus() {
+      if(system.diskStatus === "سالم") {
+        system.diskStatus = "خراب";
+        addLog(currentLanguage === "fa" ? "❌ وضعیت دیسک به خراب تغییر یافت" : "❌ Disk status changed to broken", "danger");
+      } else {
+        system.diskStatus = "سالم";
+        addLog(currentLanguage === "fa" ? "✅ وضعیت دیسک به سالم تغییر یافت" : "✅ Disk status changed to healthy", "success");
+      }
+      updateUI();
+    }
+
+    // Two-Phase Commit simulation
+    function runTwoPhaseCommit() {
+      transactionCounter++;
+      const tid = `T${transactionCounter}`;
+      const newTrans = {
+        id: tid,
+        state: "فعال",
+        twoPhase: true,
+        operations: [
+          { type: "read", item: "A" },
+          { type: "write", item: "A", old: system.data.A, new: system.data.A - 100 },
+          { type: "write", item: "B", old: system.data.B, new: system.data.B + 100 },
+          { type: "commit" }
+        ]
+      };
+      system.transactions.push(newTrans);
+      addLog(currentLanguage === "fa" ? `🤝 تراکنش Two-Phase ${tid} ایجاد شد` : `🤝 Two-Phase Transaction ${tid} created`, "info");
+
+      // Prepare Phase
+      addLog(currentLanguage === "fa" ? "🤝 Two-Phase Commit: فاز آماده‌سازی شروع شد" : "🤝 Two-Phase Commit: Prepare phase started", "info");
+      if(system.diskStatus !== "سالم") {
+        addLog(currentLanguage === "fa" ? "❌ Two-Phase Commit: فاز آماده‌سازی به دلیل خرابی دیسک شکست خورد" : "❌ Two-Phase Commit: Prepare phase failed due to disk failure", "danger");
+        newTrans.state = "شکست خورده";
+        executeUndo(newTrans);
+        updateUI();
+        return;
+      } else {
+        addLog(currentLanguage === "fa" ? "✅ Two-Phase Commit: فاز آماده‌سازی با موفقیت انجام شد" : "✅ Two-Phase Commit: Prepare phase succeeded", "success");
+      }
+      // Commit Phase
+      if(flushBuffer()){
+        newTrans.state = "تایید شده";
+        addLog(currentLanguage === "fa" ? "✅ Two-Phase Commit: فاز commit با موفقیت انجام شد" : "✅ Two-Phase Commit: Commit phase succeeded", "success");
+      }
+      updateUI();
+    }
+
+    function executeUndo(trans) {
+      trans.operations.slice().reverse().forEach(op => {
+        if(op.type === "write") {
+          const before = system.data[op.item];
+          system.data[op.item] = op.old;
+          addLog(currentLanguage === "fa" ? `↩️ بازگردانی ${op.item} از ${before} به ${op.old} (عملیات ${op.type} تراکنش ${trans.id})` : `↩️ Undo: ${op.item} reverted from ${before} to ${op.old} (Transaction ${trans.id})`, "warning");
+        }
+      });
+      updateUI();
+    }
+
+    function executeRedo() {
+      if(system.logStorage.active.length === 0) {
+        addLog(currentLanguage === "fa" ? "⚠️ هیچ لاگی برای اجرای Redo وجود ندارد!" : "⚠️ No log available for Redo!", "warning");
+        return;
+      }
+      system.logStorage.active.forEach(log => {
+        if(log.type === "UPDATE") {
+          const curr = system.data[log.data.item];
+          system.data[log.data.item] = log.data.new;
+          addLog(currentLanguage === "fa" ? `↪️ Redo: ${log.data.item} از ${curr} به ${log.data.new}` : `↪️ Redo: ${log.data.item} changed from ${curr} to ${log.data.new}`, "success");
+        }
+      });
+      updateUI();
+    }
+
+    // Flush buffer only if disk is healthy; returns true if flush succeeded, false otherwise.
+    function flushBuffer() {
+      if(system.diskStatus !== "سالم") {
+        addLog(currentLanguage === "fa" ? "❌ فلاش بافر انجام نشد: دیسک خراب است." : "❌ Buffer flush aborted: Disk is broken.", "danger");
+        return false;
+      }
+      system.buffer.forEach(entry => {
+        system.data[entry.item] = entry.value;
+      });
+      system.buffer = [];
+      return true;
+    }
+
+    // Dump operation implementation (with disk check)
+    function simulateDump() {
+      const activeTransactions = system.transactions.filter(t => t.state === "فعال");
+      if(activeTransactions.length > 0) {
+        addLog(currentLanguage === "fa" ? "❌ قبل از Dump، هیچ تراکنش فعال نباید وجود داشته باشد!" : "❌ No transaction may be acting during dump!", "danger");
+        return;
+      }
+      if(system.diskStatus !== "سالم") {
+        addLog(currentLanguage === "fa" ? "❌ Dump انجام نشد: دیسک خراب است." : "❌ Dump aborted: Disk is broken.", "danger");
+        return;
+      }
+      // 1. Output all log records in MM to stable storage
+      system.logStorage.archive = system.logStorage.archive.concat(system.logStorage.active);
+      system.logStorage.active = [];
+      addLog(currentLanguage === "fa" ? "📜 تمام لاگ‌های حافظه به ذخیره پایدار منتقل شدند." : "📜 All in-memory log records output to stable storage.", "success");
+      // 2. Flush buffer to disk (if disk is healthy – already checked)
+      if(flushBuffer()){
+        addLog(currentLanguage === "fa" ? "💾 فلاش داده‌ها به دیسک انجام شد." : "💾 Data flushed to disk successfully.", "success");
+      }
+      // 3. Copy the content of the DB to stable storage
+      system.stableDB = JSON.parse(JSON.stringify(system.data));
+      addLog(currentLanguage === "fa" ? "🗄 محتویات پایگاه داده به ذخیره پایدار کپی شد." : "🗄 DB content copied to stable storage.", "success");
+      // 4. Output a log record <dump> onto the stable storage
+      const dumpLog = new LogEntry("SYSTEM", "DUMP", { message: "<dump>" });
+      system.logStorage.archive.push(dumpLog);
+      addLog(currentLanguage === "fa" ? "📝 رکورد لاگ <dump> به ذخیره پایدار اضافه شد." : "📝 Log record <dump> output to stable storage.", "success");
+    }
+
+    function resetSystem() {
+      system = {
+        data: { A: 1000, B: 2000 },
+        transactions: [],
+        logs: [],
+        checkpoints: [],
+        buffer: [],
+        diskStatus: "سالم",
+        stableDB: {},
+        logStorage: { active: [], archive: [] }
+      };
+      transactionCounter = 0;
+      updateUI();
+      addLog(currentLanguage === "fa" ? "🔄 سیستم ریست شد" : "🔄 System reset", "info");
+    }
+
+    class LogEntry {
+      constructor(tid, type, data) {
+        this.tid = tid;
+        this.type = type;
+        this.data = data;
+        this.timestamp = new Date().toISOString();
+      }
+    }
+
+    function addLog(message, type) {
+      const logTypes = {
+        info: { color: "#17a2b8", icon: "ℹ️" },
+        success: { color: "#28a745", icon: "✅" },
+        warning: { color: "#ffc107", icon: "⚠️" },
+        danger: { color: "#dc3545", icon: "❌" }
+      };
+      const logEntry = document.createElement("div");
+      logEntry.className = "log-entry";
+      logEntry.style.borderColor = logTypes[type].color;
+      logEntry.innerHTML = `
+        <div class="d-flex align-items-center">
+          <span style="width: 30px">${logTypes[type].icon}</span>
+          <div>
+            <strong>[${new Date().toLocaleTimeString()}]</strong><br/>
+            ${message}
+          </div>
+        </div>
+      `;
+      document.getElementById("systemLogs").prepend(logEntry);
+    }
+
+    function updateUI() {
+      document.getElementById("dataA").textContent = system.data.A ?? "نامعلوم";
+      document.getElementById("dataB").textContent = system.data.B ?? "نامعلوم";
+      document.getElementById("transactions").innerHTML =
+        system.transactions.map(t => `
+          <div class="phase alert ${t.state === "شکست خورده" ? "alert-danger" : "alert-primary"}">
+            ${t.id} - ${t.state}
+            <button class="btn btn-danger btn-sm" onclick="deleteTransaction('${t.id}')" data-tooltip-key="tooltipDeleteTransaction">✖️</button>
+          </div>
+        `).join("");
+      let diskStatusDisplay = system.diskStatus;
+      if(currentLanguage === "en") {
+        diskStatusDisplay = (system.diskStatus === "سالم") ? "Healthy" : "Broken";
+      }
+      document.getElementById("diskState").textContent = `${translations.diskStatusLabel[currentLanguage]} ${diskStatusDisplay}`;
+      document.getElementById("diskState").className = system.diskStatus === "سالم" ? "text-success" : "text-danger";
+      document.getElementById("bufferedData").textContent = system.buffer.length;
+      document.getElementById("bufferContent").innerHTML = system.buffer.map(entry => `
+        <div class="data-item">${entry.item}: ${entry.value}</div>
+      `).join("");
+      // در تابع updateUI
+    document.getElementById("lastCheckpoint").textContent =
+        system.checkpoints.length > 0 
+        ? system.checkpoints[system.checkpoints.length - 1].timestamp 
+        : translations.noCheckpoint[currentLanguage];
+    document.getElementById("bufferedData").innerHTML = system.buffer.length > 0
+         ? system.buffer.map(b => `${b.item}: ${b.value}`).join(", ")
+        : translations.noBuffer[currentLanguage];
+    }
+
+    function runScenario() {
+      const scenario = document.getElementById("scenarioSelector").value;
+      scenarios[scenario]();
+      updateUI();
+    }
+
+    function failRandomTransaction() {
+      const activeTransactions = system.transactions.filter(t => t.state === "فعال");
+      if(activeTransactions.length > 0) {
+        const t = activeTransactions[Math.floor(Math.random() * activeTransactions.length)];
+        t.state = "شکست خورده";
+        addLog(currentLanguage === "fa" ? `💥 تراکنش ${t.id} به صورت تصادفی شکست خورد` : `💥 Transaction ${t.id} failed randomly`, "danger");
+        executeUndo(t);
+      }
+      updateUI();
+    }
+
+    // Recovery from checkpoint (for system crash)
+    function recoverFromCheckpoint() {
+      if(system.checkpoints.length === 0) return;
+      const lastCheckpoint = system.checkpoints[system.checkpoints.length - 1];
+      system.data = JSON.parse(JSON.stringify(lastCheckpoint.data));
+      system.logStorage.active = lastCheckpoint.logs;
+      system.transactions.forEach(t => {
+        if(t.state !== "تایید شده") t.state = "شکست خورده";
+      });
+      updateUI();
+    }
+
+    // Undo the last committed transaction
+    function undoLastTransaction() {
+      for(let i = system.transactions.length - 1; i >= 0; i--){
+        if(system.transactions[i].state === "تایید شده"){
+          executeUndo(system.transactions[i]);
+          system.transactions[i].state = "بازگردانی شده";
+          addLog(currentLanguage === "fa" ? `↩️ تراکنش ${system.transactions[i].id} بازگردانی شد` : `↩️ Transaction ${system.transactions[i].id} undone`, "warning");
+          updateUI();
+          return;
+        }
+      }
+      addLog(currentLanguage === "fa" ? "⚠️ هیچ تراکنش تایید شده‌ای برای بازگردانی وجود ندارد!" : "⚠️ No committed transaction available to undo!", "warning");
+    }
+
+    // Delete a transaction by id
+    function deleteTransaction(id) {
+      system.transactions = system.transactions.filter(t => t.id !== id);
+      addLog(currentLanguage === "fa" ? `❌ تراکنش ${id} حذف شد` : `❌ Transaction ${id} deleted`, "info");
+      updateUI();
+    }
+
+    // Initialize language and theme on page load
+    document.addEventListener("DOMContentLoaded", () => {
+      if(localStorage.getItem("darkMode") === "enabled"){
+        document.body.classList.add("dark-mode");
+      }
+      updateLanguage();
+    });
+
+    // Theme toggle
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark-mode");
+      const darkModeEnabled = document.body.classList.contains("dark-mode");
+      localStorage.setItem("darkMode", darkModeEnabled ? "enabled" : "disabled");
+      updateUI();
+    }
+
+    // Update tooltips based on language
+    function updateTooltips() {
+      document.querySelectorAll("[data-tooltip-key]").forEach(el => {
+        const key = el.getAttribute("data-tooltip-key");
+        if(translations[key] && translations[key][currentLanguage]){
+          el.title = translations[key][currentLanguage];
+        }
+      });
+    }
+
+    // Extended translation for tooltips
+    translations.tooltipNewTransaction = { fa: "ایجاد یک تراکنش جدید", en: "Create a new transaction" };
+    translations.tooltipCommitAll = { fa: "تایید تمام تراکنش‌های فعال", en: "Commit all active transactions" };
+    translations.tooltipCheckpoint = { fa: "ایجاد یک چک پوینت", en: "Create a checkpoint" };
+    translations.tooltipSimulateFailure = { fa: "شبیه‌سازی شکست تراکنش", en: "Simulate a transaction failure" };
+    translations.tooltipFlushBuffer = { fa: "فلاش کردن بافر به دیسک", en: "Flush the buffer to disk" };
+    translations.tooltipToggleDisk = { fa: "تغییر وضعیت دیسک (سالم/خراب)", en: "Toggle disk status (Healthy/Broken)" };
+    translations.tooltipRunScenario = { fa: "اجرای سناریوی انتخاب شده", en: "Run the selected scenario" };
+    translations.tooltipDump = { fa: "خروجی گرفتن از وضعیت سیستم", en: "Dump the system state" };
+    translations.tooltipResetSystem = { fa: "ریست کردن سیستم", en: "Reset the system" };
+    translations.tooltipRedo = { fa: "اعمال مجدد تغییرات", en: "Redo changes" };
+    translations.tooltipClearLogs = { fa: "پاک کردن تمام لاگ‌ها", en: "Clear all logs" };
+    translations.tooltipToggleTheme = { fa: "تغییر تم", en: "Toggle theme" };
+    translations.tooltipAbout = { fa: "اطلاعات درباره سیستم", en: "About this system" };
+    translations.tooltipGuide = { fa: "راهنمای استفاده از سیستم", en: "Usage guide" };
+    translations.tooltipToggleLanguage = { fa: "تغییر زبان", en: "Toggle language" };
+    translations.tooltipUndo = { fa: "بازگردانی آخرین تراکنش تایید شده", en: "Undo the last committed transaction" };
+    translations.tooltipDeleteTransaction = { fa: "حذف این تراکنش", en: "Delete this transaction" };
+
+    // Final UI update for tooltips
+    function updateUIWithTooltips() {
+      updateUI();
+      updateTooltips();
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
